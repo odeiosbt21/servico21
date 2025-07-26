@@ -6,6 +6,9 @@ export interface User {
   userType: 'prestador' | 'contratante';
   cpf?: string | null;
   phone?: string | null;
+  cep?: string | null;
+  address?: string | null;
+  complement?: string | null;
   neighborhood?: string | null;
   serviceType?: string | null;
   isProfileComplete: boolean;
@@ -72,4 +75,29 @@ export interface Chat {
   lastMessageTime?: Date;
   providerId: string;
   clientId: string;
+}
+
+export interface NotificationPreference {
+  id: string;
+  userId: string;
+  serviceType: string;
+  radius: number; // in kilometers
+  emailNotifications: boolean;
+  createdAt: Date;
+}
+
+export interface ServiceRequest {
+  id: string;
+  clientId: string;
+  clientName: string;
+  serviceType: string;
+  location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+  };
+  radius: number;
+  description?: string;
+  createdAt: Date;
+  status: 'active' | 'fulfilled' | 'cancelled';
 }

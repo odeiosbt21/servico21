@@ -97,6 +97,54 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
     return stars;
   };
 
+  // Show login required message if user is not authenticated
+  if (!user || !userProfile) {
+    return (
+      <Modal
+        visible={visible}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={handleClose}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.modal}>
+            <View style={styles.content}>
+              {/* Header */}
+              <View style={styles.header}>
+                <Text style={styles.title}>Login Necessário</Text>
+                <TouchableOpacity onPress={handleClose} style={styles.closeButton}>
+                  <X size={24} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Login Required Message */}
+              <View style={styles.loginRequiredContainer}>
+                <Star size={64} color="#d1d5db" />
+                <Text style={styles.loginRequiredTitle}>
+                  Você precisa estar logado para deixar uma avaliação
+                </Text>
+                <Text style={styles.loginRequiredText}>
+                  Faça login ou crie uma conta para avaliar este prestador de serviços.
+                </Text>
+                
+                <TouchableOpacity 
+                  style={styles.loginButton}
+                  onPress={() => {
+                    handleClose();
+                    // Navigate to login screen
+                    // You can add navigation logic here
+                  }}
+                >
+                  <Text style={styles.loginButtonText}>Fazer Login</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    );
+  }
+
   return (
     <Modal
       visible={visible}
@@ -270,6 +318,37 @@ const styles = StyleSheet.create({
     backgroundColor: '#94a3b8',
   },
   submitButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  loginRequiredContainer: {
+    alignItems: 'center',
+    paddingVertical: 32,
+    paddingHorizontal: 24,
+  },
+  loginRequiredTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    color: '#1e293b',
+    textAlign: 'center',
+    marginTop: 24,
+    marginBottom: 12,
+  },
+  loginRequiredText: {
+    fontSize: 16,
+    color: '#64748b',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 32,
+  },
+  loginButton: {
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  loginButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',

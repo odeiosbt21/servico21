@@ -79,6 +79,9 @@ export const resetPassword = async (email: string) => {
   }
 };
 
+// Export sendPasswordResetEmail for direct use
+export { sendPasswordResetEmail };
+
 export const logOut = async () => {
   try {
     await signOut(auth);
@@ -105,9 +108,12 @@ export const createUserProfile = async (firebaseUser: FirebaseUser, userData: Pa
       userType: cleanUserData.userType!,
       cpf: cleanUserData.cpf || null,
       phone: cleanUserData.phone || null,
+      cep: cleanUserData.cep || null,
+      address: cleanUserData.address || null,
+      complement: cleanUserData.complement || null,
       neighborhood: cleanUserData.neighborhood || null,
       serviceType: cleanUserData.serviceType || null,
-      isProfileComplete: false,
+      isProfileComplete: !!(cleanUserData.displayName && cleanUserData.cep && cleanUserData.address),
       status: cleanUserData.userType === 'prestador' ? 'disponivel' : null,
       rating: cleanUserData.userType === 'prestador' ? 0 : null,
       reviewCount: cleanUserData.userType === 'prestador' ? 0 : null,
