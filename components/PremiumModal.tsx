@@ -58,10 +58,14 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
         Alert.alert(
           'Sucesso!',
           'Parabéns! Você agora é um usuário Premium. Aproveite todos os benefícios!',
-          [{ text: 'OK', onPress: () => {
-            onSuccess?.();
-            onClose();
-          }}]
+          [{ 
+            text: 'OK', 
+            onPress: async () => {
+              await refreshProfile(); // Refresh profile to update premium status
+              onSuccess?.();
+              onClose();
+            }
+          }]
         );
       } else {
         Alert.alert('Erro', 'Falha no processamento do pagamento. Tente novamente.');

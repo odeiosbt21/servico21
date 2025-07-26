@@ -241,7 +241,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Premium Section */}
-        {!userProfile?.isPremium && (
+        {!userProfile?.isPremium ? (
           <View style={styles.section}>
             <View style={styles.premiumPromoCard}>
               <View style={styles.premiumPromoContent}>
@@ -259,6 +259,20 @@ export default function ProfileScreen() {
               >
                 <Text style={styles.premiumButtonText}>Assinar R$ 9,99/mês</Text>
               </TouchableOpacity>
+            </View>
+          </View>
+        ) : (
+          <View style={styles.section}>
+            <View style={styles.premiumActiveCard}>
+              <View style={styles.premiumActiveContent}>
+                <Crown size={32} color="#fbbf24" fill="#fbbf24" />
+                <View style={styles.premiumActiveText}>
+                  <Text style={styles.premiumActiveTitle}>Você é Premium! ⭐</Text>
+                  <Text style={styles.premiumActiveSubtitle}>
+                    Aproveite todos os benefícios exclusivos
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
         )}
@@ -681,6 +695,33 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     fontWeight: '600',
+  },
+  premiumActiveCard: {
+    backgroundColor: '#f0fdf4',
+    borderRadius: 16,
+    padding: 20,
+    marginHorizontal: 24,
+    borderWidth: 2,
+    borderColor: '#22c55e',
+  },
+  premiumActiveContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  premiumActiveText: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  premiumActiveTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#15803d',
+    marginBottom: 4,
+  },
+  premiumActiveSubtitle: {
+    fontSize: 14,
+    color: '#15803d',
+    lineHeight: 20,
   },
   statsGrid: {
     paddingHorizontal: 16,

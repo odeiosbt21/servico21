@@ -64,7 +64,8 @@ export const subscribeToPremium = async (
     const userRef = doc(db, 'users', userId);
     await updateDoc(userRef, {
       isPremium: true,
-      premiumExpiresAt: Timestamp.fromDate(endDate)
+      premiumExpiresAt: Timestamp.fromDate(endDate),
+      subscriptionDate: Timestamp.now()
     });
 
     return true;
