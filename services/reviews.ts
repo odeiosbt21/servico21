@@ -23,6 +23,11 @@ export const addReview = async (
   comment: string
 ) => {
   try {
+    // Prevent self-review
+    if (providerId === clientId) {
+      throw new Error('Usuário não pode avaliar a si mesmo');
+    }
+
     // Add review to reviews collection
     const reviewData = {
       providerId,

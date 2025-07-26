@@ -15,6 +15,7 @@ import {
 import { db } from './firebase';
 import { Chat, ChatMessage } from '@/types';
 import { createNotification } from './notifications';
+import { uploadImage } from './storage';
 
 export const createOrGetChat = async (
   currentUserId: string,
@@ -64,6 +65,113 @@ export const createOrGetChat = async (
   }
 };
 
+export const sendImageMessage = async (
+  chatId: string,
+  senderId: string,
+  senderName: string,
+  imageUri: string
+) => {
+  try {
+    // Upload image first
+    const imageUrl = await uploadImage(imageUri, `chat_${chatId}_${Date.now()}`);
+    
+    // Get chat data to find the other participant
+    const chatRef = doc(db, 'chats', chatId);
+    const chatDoc = await getDoc(chatRef);
+    
+    if (!chatDoc.exists()) {
+      throw new Error('Chat not found');
+    }
+    
+    const chatData = chatDoc.data();
+    const otherParticipantId = chatData.participants.find((id: string) => id !== senderId);
+    
+    // Add message to messages subcollection
+    const messagesRef = collection(db, 'chats', chatId, 'messages');
+    await addDoc(messagesRef, {
+      senderId,
+      senderName,
+      type: 'image',
+      imageUrl,
+      timestamp: Timestamp.now(),
+      read: false
+    });
+    
+    // Update chat's last message
+    await updateDoc(chatRef, {
+      lastMessage: '📷 Imagem',
+      lastMessageTime: Timestamp.now()
+    });
+    
+    // Create notification for the other participant
+    if (otherParticipantId) {
+      await createNotification(
+        otherParticipantId,
+        'message',
+        `Nova imagem de ${senderName}`,
+        'Enviou uma imagem',
+        { chatId, senderId }
+      );
+    }
+  } catch (error) {
+    console.error('Error sending image message:', error);
+    throw error;
+  }
+};
+
+export const sendLocationMessage = async (
+  chatId: string,
+  senderId: string,
+  senderName: string,
+  latitude: number,
+  longitude: number
+) => {
+  try {
+    // Get chat data to find the other participant
+    const chatRef = doc(db, 'chats', chatId);
+    const chatDoc = await getDoc(chatRef);
+    
+    if (!chatDoc.exists()) {
+      throw new Error('Chat not found');
+    }
+    
+    const chatData = chatDoc.data();
+    const otherParticipantId = chatData.participants.find((id: string) => id !== senderId);
+    
+    // Add message to messages subcollection
+    const messagesRef = collection(db, 'chats', chatId, 'messages');
+    await addDoc(messagesRef, {
+      senderId,
+      senderName,
+      type: 'location',
+      latitude,
+      longitude,
+      timestamp: Timestamp.now(),
+      read: false
+    });
+    
+    // Update chat's last message
+    await updateDoc(chatRef, {
+      lastMessage: '📍 Localização',
+      lastMessageTime: Timestamp.now()
+    });
+    
+    // Create notification for the other participant
+    if (otherParticipantId) {
+      await createNotification(
+        otherParticipantId,
+        'message',
+        `Nova localização de ${senderName}`,
+        'Compartilhou a localização',
+        { chatId, senderId }
+      );
+    }
+  } catch (error) {
+    console.error('Error sending location message:', error);
+    throw error;
+  }
+};
+
 export const sendMessage = async (
   chatId: string,
   senderId: string,
@@ -87,8 +195,10 @@ export const sendMessage = async (
     await addDoc(messagesRef, {
       senderId,
       senderName,
+      type: 'text',
       text,
-      timestamp: Timestamp.now()
+      timestamp: Timestamp.now(),
+      read: false
     });
     
     // Update chat's last message

@@ -16,10 +16,11 @@ import { Platform } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
 
+// Google Auth configuration
 export const useGoogleAuth = () => {
   const [request, response, promptAsync] = Google.useAuthRequest({
     webClientId: '1070809826302-8b7842955a27d14fbc36af.apps.googleusercontent.com',
-    iosClientId: '1070809826302-ios.apps.googleusercontent.com',
+    iosClientId: '1070809826302-ios.apps.googleusercontent.com', 
     androidClientId: '1070809826302-android.apps.googleusercontent.com',
     scopes: ['profile', 'email'],
   });
@@ -27,10 +28,21 @@ export const useGoogleAuth = () => {
   return { request, response, promptAsync };
 };
 
-export const signInWithGoogle = async (accessToken: string) => {
+export const signInWithGoogle = async (idToken: string, accessToken?: string) => {
   try {
-    const credential = GoogleAuthProvider.credential(accessToken);
+    const credential = GoogleAuthProvider.credential(idToken, accessToken);
     const result = await signInWithCredential(auth, credential);
+    
+    // Create or update user profile
+    if (result.user) {
+      const existingProfile = await getUserProfile(result.user.uid);
+      if (!existingProfile) {
+        await createUserProfile(result.user, {
+          userType: 'contratante' // Default to client
+        });
+      }
+    }
+    
     return result.user;
   } catch (error) {
     console.error('Google sign in error:', error);

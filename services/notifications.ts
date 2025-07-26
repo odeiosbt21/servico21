@@ -15,7 +15,7 @@ import { db } from './firebase';
 export interface Notification {
   id: string;
   userId: string;
-  type: 'message' | 'review' | 'chat_request' | 'status_update';
+  type: 'message' | 'review' | 'chat_request' | 'status_update' | 'proximity';
   title: string;
   message: string;
   data?: any;

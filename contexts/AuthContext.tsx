@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
 import { auth } from '@/services/firebase';
 import { getUserProfile } from '@/services/auth';
+import { geolocationService } from '@/services/geolocation';
 import { User } from '@/types';
 
 interface AuthContextType {
@@ -40,8 +41,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const profile = await getUserProfile(user.uid);
       console.log('Profile refreshed:', profile);
       setUserProfile(profile);
+      
+      // Start location tracking for clients
+      if (profile?.userType === 'contratante') {
+        geolocationService.startLocationTracking(user.uid, []);
+      }
     } else {
       console.log('No user to refresh profile for');
+      geolocationService.stopLocationTracking();
     }
   };
 
@@ -52,8 +59,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (firebaseUser) {
         const profile = await getUserProfile(firebaseUser.uid);
         setUserProfile(profile);
+        
+        // Start location tracking for clients
+        if (profile?.userType === 'contratante') {
+          geolocationService.startLocationTracking(firebaseUser.uid, []);
+        }
       } else {
         setUserProfile(null);
+        geolocationService.stopLocationTracking();
       }
       
       setIsLoading(false);

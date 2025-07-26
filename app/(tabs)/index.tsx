@@ -4,6 +4,7 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { Search, MapPin, Users, Star, Bell } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '@/services/firebase';
+import { SERVICES } from '@/constants/services';
 import { MapView } from '@/components/MapView';
 import { SearchFilters } from '@/components/SearchFilters';
 import { ProviderCard } from '@/components/ProviderCard';
@@ -214,6 +215,28 @@ export default function HomeScreen() {
         </View>
       </View>
 
+      {/* Quick Service Categories */}
+      <View style={styles.categoriesSection}>
+        <Text style={styles.categoriesTitle}>Serviços Populares</Text>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoriesScroll}
+          contentContainerStyle={styles.categoriesContent}
+        >
+          {SERVICES.slice(0, 8).map((service) => (
+            <TouchableOpacity
+              key={service.id}
+              style={styles.categoryCard}
+              onPress={() => setSelectedService(service.name)}
+            >
+              <Text style={styles.categoryIcon}>{service.icon}</Text>
+              <Text style={styles.categoryName}>{service.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+
       <ScrollView
         style={styles.scrollView}
         refreshControl={
@@ -350,6 +373,53 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+  },
+  categoriesSection: {
+    backgroundColor: 'white',
+    paddingVertical: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+  },
+  categoriesTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#1e293b',
+    marginBottom: 16,
+    paddingHorizontal: 24,
+  },
+  categoriesScroll: {
+    paddingLeft: 24,
+  },
+  categoriesContent: {
+    paddingRight: 24,
+  },
+  categoryCard: {
+    backgroundColor: '#f8fafc',
+    borderRadius: 16,
+    padding: 16,
+    marginRight: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minWidth: 80,
+    minHeight: 80,
+    borderWidth: 2,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  categoryIcon: {
+    fontSize: 24,
+    marginBottom: 8,
+  },
+  categoryName: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#1e293b',
+    textAlign: 'center',
+    lineHeight: 14,
   },
   providersList: {
     paddingBottom: 20,

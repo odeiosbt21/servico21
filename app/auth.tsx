@@ -14,11 +14,12 @@ import {
 import { router, useLocalSearchParams } from 'expo-router';
 import { Mail, Lock, User, Eye, EyeOff, ArrowLeft } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
-import { signInWithEmail, signUpWithEmail, createUserProfile } from '@/services/auth';
+import { signInWithEmail, signUpWithEmail, createUserProfile, useGoogleAuth, signInWithGoogle } from '@/services/auth';
 
 export default function AuthScreen() {
   const { userType } = useLocalSearchParams<{ userType?: string }>();
   const { user } = useAuth();
+  const { request, response, promptAsync } = useGoogleAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,6 +27,13 @@ export default function AuthScreen() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    if (response?.type === 'success') {
+      const { id_token, access_token } = response.params;
+      handleGoogleSignIn(id_token, access_token);
+    }
+  }, [response]);
 
   useEffect(() => {
     if (user) {
@@ -60,6 +68,19 @@ export default function AuthScreen() {
     }
 
     return true;
+  };
+
+  const handleGoogleSignIn = async (idToken: string, accessToken?: string) => {
+    setLoading(true);
+    try {
+      await signInWithGoogle(idToken, accessToken);
+      Alert.alert('Sucesso', 'Login com Google realizado com sucesso!');
+    } catch (error: any) {
+      console.error('Google auth error:', error);
+      Alert.alert('Erro', 'Falha no login com Google. Tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -215,6 +236,17 @@ export default function AuthScreen() {
             </Text>
           </TouchableOpacity>
 
+          {/* Google Sign In Button */}
+          <TouchableOpacity
+            style={[styles.googleButton, loading && styles.googleButtonDisabled]}
+            onPress={() => promptAsync()}
+            disabled={loading || !request}
+          >
+            <Text style={styles.googleButtonText}>
+              {isLogin ? 'Entrar com Google' : 'Criar conta com Google'}
+            </Text>
+          </TouchableOpacity>
+
           {/* Toggle Login/Signup */}
           <View style={styles.toggleContainer}>
             <Text style={styles.toggleText}>
@@ -320,6 +352,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#94a3b8',
   },
   submitButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  googleButton: {
+    backgroundColor: '#4285f4',
+    borderRadius: 12,
+    height: 50,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  googleButtonDisabled: {
+    backgroundColor: '#94a3b8',
+  },
+  googleButtonText: {
     color: 'white',
     fontSize: 16,
     fontWeight: '600',

@@ -37,6 +37,12 @@ export const ReviewModal: React.FC<ReviewModalProps> = ({
       return;
     }
 
+    // Prevent self-review
+    if (user.uid === providerId) {
+      Alert.alert('Erro', 'Você não pode avaliar a si mesmo.');
+      return;
+    }
+
     if (rating === 0) {
       Alert.alert('Erro', 'Selecione uma avaliação de 1 a 5 estrelas.');
       return;

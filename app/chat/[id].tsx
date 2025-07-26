@@ -9,14 +9,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-  Image
+  Image,
+  ActivityIndicator
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
-import { ArrowLeft, Send } from 'lucide-react-native';
+import { ArrowLeft, Send, Image as ImageIcon, MapPin } from 'lucide-react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '@/contexts/AuthContext';
-import { getChatMessages, sendMessage } from '@/services/chat';
+import { getChatMessages, sendMessage, sendImageMessage, sendLocationMessage } from '@/services/chat';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/services/firebase';
+import { getCurrentLocation } from '@/services/location';
 import { ChatMessage } from '@/types';
 
 export default function ChatDetailScreen() {
@@ -27,6 +30,8 @@ export default function ChatDetailScreen() {
   const [loading, setLoading] = useState(false);
   const [chatInfo, setChatInfo] = useState<any>(null);
   const [otherUser, setOtherUser] = useState<any>(null);
+  const [isTyping, setIsTyping] = useState(false);
+  const [showAttachments, setShowAttachments] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -85,6 +90,60 @@ export default function ChatDetailScreen() {
     }
   };
 
+  const handleSendImage = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Erro', 'Permissão para acessar a galeria é necessária.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets[0] && user && userProfile && id) {
+        setLoading(true);
+        try {
+          await sendImageMessage(id, user.uid, userProfile.displayName, result.assets[0].uri);
+          setShowAttachments(false);
+        } catch (error) {
+          console.error('Error sending image:', error);
+          Alert.alert('Erro', 'Falha ao enviar imagem.');
+        } finally {
+          setLoading(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Erro', 'Falha ao selecionar imagem.');
+    }
+  };
+
+  const handleSendLocation = async () => {
+    if (!user || !userProfile || !id) return;
+
+    setLoading(true);
+    try {
+      const location = await getCurrentLocation();
+      await sendLocationMessage(
+        id, 
+        user.uid, 
+        userProfile.displayName, 
+        location.latitude, 
+        location.longitude
+      );
+      setShowAttachments(false);
+    } catch (error) {
+      console.error('Error sending location:', error);
+      Alert.alert('Erro', 'Falha ao enviar localização.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const renderMessage = ({ item }: { item: ChatMessage }) => {
     const isMyMessage = item.senderId === user?.uid;
     const messageUser = isMyMessage ? userProfile : otherUser;
@@ -107,12 +166,28 @@ export default function ChatDetailScreen() {
           {!isMyMessage && (
             <Text style={styles.senderName}>{item.senderName}</Text>
           )}
-          <Text style={[
-            styles.messageText,
-            isMyMessage ? styles.myMessageText : styles.otherMessageText
-          ]}>
-            {item.text}
-          </Text>
+          
+          {item.type === 'image' ? (
+            <Image source={{ uri: item.imageUrl }} style={styles.messageImage} />
+          ) : item.type === 'location' ? (
+            <View style={styles.locationMessage}>
+              <MapPin size={16} color={isMyMessage ? 'white' : '#2563eb'} />
+              <Text style={[
+                styles.messageText,
+                isMyMessage ? styles.myMessageText : styles.otherMessageText
+              ]}>
+                Localização compartilhada
+              </Text>
+            </View>
+          ) : (
+            <Text style={[
+              styles.messageText,
+              isMyMessage ? styles.myMessageText : styles.otherMessageText
+            ]}>
+              {item.text}
+            </Text>
+          )}
+          
           <Text style={[
             styles.messageTime,
             isMyMessage ? styles.myMessageTime : styles.otherMessageTime
@@ -121,6 +196,9 @@ export default function ChatDetailScreen() {
               hour: '2-digit', 
               minute: '2-digit' 
             })}
+            {item.read && isMyMessage && (
+              <Text style={styles.readStatus}> ✓✓</Text>
+            )}
           </Text>
         </View>
         
@@ -172,22 +250,53 @@ export default function ChatDetailScreen() {
       />
       
       <View style={styles.inputContainer}>
+        {showAttachments && (
+          <View style={styles.attachmentsMenu}>
+            <TouchableOpacity style={styles.attachmentButton} onPress={handleSendImage}>
+              <ImageIcon size={20} color="#2563eb" />
+              <Text style={styles.attachmentText}>Imagem</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.attachmentButton} onPress={handleSendLocation}>
+              <MapPin size={20} color="#2563eb" />
+              <Text style={styles.attachmentText}>Localização</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        <View style={styles.inputRow}>
+          <TouchableOpacity
+            style={styles.attachButton}
+            onPress={() => setShowAttachments(!showAttachments)}
+          >
+            <Text style={styles.attachButtonText}>+</Text>
+          </TouchableOpacity>
+          
         <TextInput
           style={styles.textInput}
           value={newMessage}
-          onChangeText={setNewMessage}
+          onChangeText={(text) => {
+            setNewMessage(text);
+            // Simulate typing indicator
+            setIsTyping(text.length > 0);
+          }}
           placeholder="Digite sua mensagem..."
           multiline
           maxLength={500}
           placeholderTextColor="#94a3b8"
         />
+        
         <TouchableOpacity
           style={[styles.sendButton, (!newMessage.trim() || loading) && styles.sendButtonDisabled]}
           onPress={handleSendMessage}
           disabled={!newMessage.trim() || loading}
         >
-          <Send size={20} color={(!newMessage.trim() || loading) ? '#94a3b8' : 'white'} />
+          {loading ? (
+            <ActivityIndicator size="small" color="white" />
+          ) : (
+            <Send size={20} color={(!newMessage.trim() || loading) ? '#94a3b8' : 'white'} />
+          )}
         </TouchableOpacity>
+        </View>
       </View>
     </KeyboardAvoidingView>
   );
@@ -258,13 +367,67 @@ const styles = StyleSheet.create({
   otherMessageTime: {
     color: '#64748b',
   },
-  inputContainer: {
+  readStatus: {
+    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 10,
+  },
+  messageImage: {
+    width: 200,
+    height: 150,
+    borderRadius: 12,
+    marginBottom: 4,
+  },
+  locationMessage: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
-    padding: 16,
+    alignItems: 'center',
+  },
+  inputContainer: {
     backgroundColor: 'white',
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
+    padding: 16,
+  },
+  attachmentsMenu: {
+    flexDirection: 'row',
+    backgroundColor: '#f8fafc',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    gap: 16,
+  },
+  attachmentButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  attachmentText: {
+    marginLeft: 8,
+    fontSize: 14,
+    color: '#2563eb',
+    fontWeight: '500',
+  },
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+  },
+  attachButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f1f5f9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  attachButtonText: {
+    fontSize: 20,
+    color: '#2563eb',
+    fontWeight: 'bold',
   },
   textInput: {
     flex: 1,

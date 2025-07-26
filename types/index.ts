@@ -55,8 +55,13 @@ export interface ChatMessage {
   chatId: string;
   senderId: string;
   senderName: string;
-  text: string;
+  type: 'text' | 'image' | 'location';
+  text?: string;
+  imageUrl?: string;
+  latitude?: number;
+  longitude?: number;
   timestamp: Date;
+  read: boolean;
 }
 
 export interface Chat {
