@@ -400,7 +400,7 @@ export default function ProfileScreen() {
             </TouchableOpacity>
           )}
 
-          <TouchableOpacity style={styles.actionItem} onPress={navigateToProfileSetup}>
+          <TouchableOpacity style={styles.actionItem} onPress={() => router.push('/edit-profile')}>
             <View style={styles.actionLeft}>
               <Edit size={20} color="#64748b" />
               <Text style={styles.actionText}>Editar Perfil</Text>

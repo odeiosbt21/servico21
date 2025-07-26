@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, ScrollView, RefreshControl, Text, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, ScrollView, RefreshControl, Text, TouchableOpacity, Alert } from 'react-native';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
-import { Search, MapPin, Users, Star, Bell } from 'lucide-react-native';
+import { Search, MapPin, Users, Star, Bell, Plus } from 'lucide-react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from '@/services/firebase';
 import { SERVICES } from '@/constants/services';
@@ -13,10 +13,11 @@ import { Provider } from '@/types';
 import { calculateDistance, getCurrentLocation } from '@/services/location';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNotifications } from '@/contexts/NotificationContext';
+import { simulateServiceRequest } from '@/services/serviceRequests';
 import { router } from 'expo-router';
 
 export default function HomeScreen() {
-  const { user } = useAuth();
+  const { user, userProfile } = useAuth();
   const { unreadCount } = useNotifications();
   const [providers, setProviders] = useState<Provider[]>([]);
   const [filteredProviders, setFilteredProviders] = useState<Provider[]>([]);
@@ -165,6 +166,65 @@ export default function HomeScreen() {
     router.push(`/provider/${provider.uid}`);
   };
 
+  const handleRequestService = () => {
+    if (!user || !userProfile) {
+      Alert.alert(
+        'Login Necessário',
+        'Você precisa estar logado para solicitar um serviço.',
+        [
+          { text: 'Cancelar', style: 'cancel' },
+          { text: 'Fazer Login', onPress: () => router.push('/auth') }
+        ]
+      );
+      return;
+    }
+
+    if (userProfile.userType !== 'contratante') {
+      Alert.alert(
+        'Tipo de Usuário',
+        'Apenas clientes podem solicitar serviços. Altere seu tipo de usuário no perfil.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    // Show service selection
+    const serviceOptions = SERVICES.slice(0, 6).map(service => ({
+      text: service.name,
+      onPress: () => requestSpecificService(service.name)
+    }));
+
+    Alert.alert(
+      'Solicitar Serviço',
+      'Qual serviço você precisa?',
+      [
+        ...serviceOptions,
+        { text: 'Cancelar', style: 'cancel' }
+      ]
+    );
+  };
+
+  const requestSpecificService = async (serviceType: string) => {
+    if (!userProfile) return;
+
+    try {
+      await simulateServiceRequest(userProfile, serviceType, `Solicitação de ${serviceType}`);
+      
+      Alert.alert(
+        'Solicitação Enviada!',
+        `Sua solicitação de ${serviceType} foi enviada. Prestadores próximos foram notificados por email.`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      console.error('Error requesting service:', error);
+      Alert.alert(
+        'Erro',
+        'Não foi possível enviar sua solicitação. Verifique se seu endereço está cadastrado no perfil.',
+        [{ text: 'OK' }]
+      );
+    }
+  };
+
   return (
     <View style={styles.container}>
       {/* App Header */}
@@ -275,6 +335,16 @@ export default function HomeScreen() {
           ))}
         </View>
       </ScrollView>
+      
+      {/* Floating Action Button for Service Request */}
+      {userProfile?.userType === 'contratante' && (
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={handleRequestService}
+        >
+          <Plus size={24} color="#fff" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
@@ -423,5 +493,21 @@ const styles = StyleSheet.create({
   },
   providersList: {
     paddingBottom: 20,
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#2563eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
 });
